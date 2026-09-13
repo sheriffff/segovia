@@ -1,0 +1,51 @@
+{
+ "acueducto": {
+  "file": "acueducto.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Acueducto de Segovia - 21.jpg",
+  "artist": "Carlos Delgado",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Acueducto_de_Segovia_-_21.jpg"
+ },
+ "acueducto2": {
+  "file": "acueducto2.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Acueducto, Segovia, España, 2024-06-14, DD 10.jpg",
+  "artist": "Diego Delso",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Acueducto,_Segovia,_Espa%C3%B1a,_2024-06-14,_DD_10.jpg"
+ },
+ "alcazar": {
+  "file": "alcazar.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Segovia - 01.jpg",
+  "artist": "Carlos Delgado",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Segovia_-_01.jpg"
+ },
+ "catedral": {
+  "file": "catedral.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Catedral de Nuestra Senora de la Asuncion y de San Frutos from Plaza Mayor Segovia Spain.jpg",
+  "artist": "Jebulon",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Catedral_de_Nuestra_Senora_de_la_Asuncion_y_de_San_Frutos_from_Plaza_Mayor_Segovia_Spain.jpg"
+ },
+ "cochinillo": {
+  "file": "cochinillo.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Cochinillo Asado Segoviano.jpg",
+  "artist": "Diegoml1933",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Cochinillo_Asado_Segoviano.jpg"
+ },
+ "judiones": {
+  "file": "judiones.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Judiones de la Granja 098.jpg",
+  "artist": "Tamorlan",
+  "license": "CC BY 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Judiones_de_la_Granja_098.jpg"
+ },
+ "nocturna": {
+  "file": "nocturna.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "title": "Panorámica nocturna de Segovia con el Alcázar en primer plano.jpg",
+  "artist": "Ministrillo",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Panor%C3%A1mica_nocturna_de_Segovia_con_el_Alc%C3%A1zar_en_primer_plano.jpg"
+ }
+}

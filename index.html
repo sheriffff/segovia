@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Judiones, Cochinillo y Acueducto · Los viernes del Sheriff en Segovia</title>
+  <meta name="description" content="Apúntate a un viernes de otoño en Segovia con el Sheriff: coche, comilona, paseo y vuelta a Madrid.">
+  <meta property="og:title" content="Judiones, Cochinillo y Acueducto">
+  <meta property="og:description" content="Reserva tu viernes en Segovia: coche, comilona, paseo y vuelta a Madrid.">
+  <meta property="og:image" content="img/acueducto2.jpg">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232a2019'/%3E%3Cpath fill='%23c48a2a' fill-rule='evenodd' d='M8 14h48v42H8zM12 56V34a8 8 0 0 1 16 0v22zM36 56V34a8 8 0 0 1 16 0v22z'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="hero" id="inicio">
+  <img class="hero__img" src="img/acueducto2.jpg" alt="El acueducto de Segovia bajo un cielo azul" fetchpriority="high">
+  <div class="hero__inner">
+    <p class="hero__kicker">Otoño 2026 · Doce viernes · Un coche</p>
+    <h1 class="hero__title">
+      <span>Judiones,</span>
+      <span>Cochinillo</span>
+      <span class="y">y</span>
+      <span>Acueducto</span>
+    </h1>
+    <p class="hero__sub">El Sheriff da clase en Segovia todos los viernes de 16:20 a 20:00. Tú pones el coche, Segovia pone la mesa, y la vuelta la hacemos con la digestión hecha y el Alcázar iluminado.</p>
+    <div class="hero__cta">
+      <a class="btn btn--ocre" href="#viernes">Reserva tu viernes</a>
+      <a class="btn btn--ghost" href="#comer">Ver dónde comemos</a>
+    </div>
+  </div>
+  <div class="hero__scroll" aria-hidden="true">baja</div>
+  <svg class="hero__arcos" viewBox="0 0 1200 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <path fill="currentColor" fill-rule="evenodd" d="M0,0H1200V150H0ZM14,150V62A36,36 0 0 1 86,62V150ZM114,150V62A36,36 0 0 1 186,62V150ZM214,150V62A36,36 0 0 1 286,62V150ZM314,150V62A36,36 0 0 1 386,62V150ZM414,150V62A36,36 0 0 1 486,62V150ZM514,150V62A36,36 0 0 1 586,62V150ZM614,150V62A36,36 0 0 1 686,62V150ZM714,150V62A36,36 0 0 1 786,62V150ZM814,150V62A36,36 0 0 1 886,62V150ZM914,150V62A36,36 0 0 1 986,62V150ZM1014,150V62A36,36 0 0 1 1086,62V150ZM1114,150V62A36,36 0 0 1 1186,62V150Z"/>
+  </svg>
+</header>
+
+<main>
+
+<section class="seccion plan" id="plan">
+  <div class="wrap">
+    <div class="seccion__head">
+      <div class="seccion__num">I</div>
+      <h2 class="seccion__titulo">El plan</h2>
+      <p class="seccion__intro">Simple como un judión: salimos de Madrid a la hora de comer, comemos como romanos, el Sheriff cumple con su deber docente y volvemos de noche con las luces del Alcázar de despedida.</p>
+    </div>
+    <div class="timeline">
+      <article class="paso">
+        <div class="paso__num">I</div>
+        <div class="paso__hora">13:00</div>
+        <h3>Salida de Madrid</h3>
+        <p>Quien reserva primero conduce y decide el punto de recogida. Hora y media de charla hasta ver el acueducto.</p>
+      </article>
+      <article class="paso">
+        <div class="paso__num">II</div>
+        <div class="paso__hora">14:15</div>
+        <h3>La comilona</h3>
+        <p>Cochinillo, cordero, judiones o lo que hayáis elegido en el mapa. Sin prisa, pero con hora de salida.</p>
+      </article>
+      <article class="paso paso--clase">
+        <div class="paso__num">III</div>
+        <div class="paso__hora">16:20 – 20:00</div>
+        <h3>El Sheriff da clase</h3>
+        <p>Vosotros a vuestro aire: siesta, paseo por la judería, un café en la Plaza Mayor o una visita al Alcázar.</p>
+      </article>
+      <article class="paso">
+        <div class="paso__num">IV</div>
+        <div class="paso__hora">20:00</div>
+        <h3>Paseo y algo de picar</h3>
+        <p>Reencuentro en el campus, paseo por la muralla al anochecer y, si el cuerpo lo pide, una caña de despedida.</p>
+      </article>
+      <article class="paso paso--vuelta">
+        <div class="paso__num">V</div>
+        <div class="paso__hora">21:00</div>
+        <h3>Vuelta a Madrid</h3>
+        <p>Con la digestión hecha y las luces de Segovia por el retrovisor. En casa antes de las once.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="banda" style="background-image:url('img/alcazar.jpg')">
+  <blockquote>«En Segovia se come despacio porque la ciudad te está esperando fuera.»
+    <cite>Dicho popular inventado por el Sheriff, pero cierto.</cite>
+  </blockquote>
+</section>
+
+<section class="seccion viernes" id="viernes">
+  <div class="wrap">
+    <div class="seccion__head">
+      <div class="seccion__num">II</div>
+      <h2 class="seccion__titulo">Los viernes</h2>
+      <p class="seccion__intro">Del 18 de septiembre al 4 de diciembre. Cada viernes cabe un coche: el primero que se apunta conduce y elige restaurante, y pueden sumarse dos más. Sube una foto al reservar para que los siguientes sepan con quién van.</p>
+    </div>
+    <div class="leyenda">
+      <span class="l-libre">Libre: nadie todavía</span>
+      <span class="l-parcial">Quedan plazas</span>
+      <span class="l-lleno">Completo</span>
+    </div>
+    <div class="grid-viernes" id="grid-viernes" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="seccion comer" id="comer">
+  <div class="wrap">
+    <div class="seccion__head">
+      <div class="seccion__num">III</div>
+      <h2 class="seccion__titulo">Dónde comemos</h2>
+      <p class="seccion__intro">Restaurantes a tiro de paseo del campus de IE en Santa Cruz la Real. Filtra por lo que te apetezca y mira cuántos minutos andando hay hasta la clase: así el Sheriff llega puntual.</p>
+    </div>
+
+    <div class="filtros" id="filtros">
+      <div class="filtros__grupo" role="group" aria-label="Tipo de cocina">
+        <span class="filtros__label">Tipo</span>
+        <button class="chip" data-filtro="tipo" data-valor="" aria-pressed="true">Todos</button>
+        <button class="chip" data-filtro="tipo" data-valor="asador" aria-pressed="false">Asador</button>
+        <button class="chip" data-filtro="tipo" data-valor="tapas" aria-pressed="false">Tapas y raciones</button>
+        <button class="chip" data-filtro="tipo" data-valor="moderno" aria-pressed="false">Cocina moderna</button>
+      </div>
+      <div class="filtros__grupo" role="group" aria-label="Precio">
+        <span class="filtros__label">Precio</span>
+        <button class="chip" data-filtro="precio" data-valor="" aria-pressed="true">Todos</button>
+        <button class="chip" data-filtro="precio" data-valor="1" aria-pressed="false">€ hasta 20</button>
+        <button class="chip" data-filtro="precio" data-valor="2" aria-pressed="false">€€ 20–40</button>
+        <button class="chip" data-filtro="precio" data-valor="3" aria-pressed="false">€€€ más de 40</button>
+      </div>
+      <div class="filtros__resultado" id="filtros-resultado"></div>
+    </div>
+
+    <div class="mapa-wrap">
+      <div id="mapa" role="region" aria-label="Mapa de restaurantes de Segovia"></div>
+      <div class="mapa-leyenda" aria-hidden="true">
+        <span class="t-asador">Asador</span>
+        <span class="t-tapas">Tapas y raciones</span>
+        <span class="t-moderno">Cocina moderna</span>
+        <span class="t-campus">Campus IE</span>
+      </div>
+    </div>
+
+    <div class="grid-restos" id="grid-restos"></div>
+  </div>
+</section>
+
+<section class="banda" style="background-image:url('img/nocturna.jpg')">
+  <blockquote>«Volver a Madrid de noche, después de comer en Segovia, es la única forma decente de terminar una semana.»
+    <cite>El Sheriff, con la mano en el pecho.</cite>
+  </blockquote>
+</section>
+
+</main>
+
+<svg class="footer__arcos" viewBox="0 0 1200 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <path fill="currentColor" fill-rule="evenodd" d="M0,0H1200V150H0ZM14,150V62A36,36 0 0 1 86,62V150ZM114,150V62A36,36 0 0 1 186,62V150ZM214,150V62A36,36 0 0 1 286,62V150ZM314,150V62A36,36 0 0 1 386,62V150ZM414,150V62A36,36 0 0 1 486,62V150ZM514,150V62A36,36 0 0 1 586,62V150ZM614,150V62A36,36 0 0 1 686,62V150ZM714,150V62A36,36 0 0 1 786,62V150ZM814,150V62A36,36 0 0 1 886,62V150ZM914,150V62A36,36 0 0 1 986,62V150ZM1014,150V62A36,36 0 0 1 1086,62V150ZM1114,150V62A36,36 0 0 1 1186,62V150Z"/>
+</svg>
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__logo">Judiones, Cochinillo y Acueducto</div>
+    <p>Un plan del Sheriff para el otoño de 2026. Si algo no cuadra, escríbele. Si sobra cochinillo, también.</p>
+    <p class="footer__creditos">
+      Fotos con licencia libre de Wikimedia Commons:
+      <a href="https://commons.wikimedia.org/wiki/File:Acueducto,_Segovia,_Espa%C3%B1a,_2024-06-14,_DD_10.jpg">acueducto</a> © Diego Delso, CC BY-SA 4.0 ·
+      <a href="https://commons.wikimedia.org/wiki/File:Segovia_-_01.jpg">panorámica</a> © Carlos Delgado, CC BY-SA 3.0 ·
+      <a href="https://commons.wikimedia.org/wiki/File:Panor%C3%A1mica_nocturna_de_Segovia_con_el_Alc%C3%A1zar_en_primer_plano.jpg">nocturna</a> © Ministrillo, CC BY-SA 4.0 ·
+      <a href="https://commons.wikimedia.org/wiki/File:Cochinillo_Asado_Segoviano.jpg">cochinillo</a> Diegoml1933, CC0 ·
+      <a href="https://commons.wikimedia.org/wiki/File:Judiones_de_la_Granja_098.jpg">judiones</a> © Tamorlan, CC BY 3.0.
+      Mapa: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> y <a href="https://carto.com/attributions">CARTO</a>, con <a href="https://leafletjs.com">Leaflet</a>.
+      Los datos de los restaurantes son orientativos: confirma horarios y reserva mesa antes de ir.
+    </p>
+  </div>
+</footer>
+
+<dialog class="modal" id="modal-reserva">
+  <div class="modal__cab">
+    <h3 id="modal-titulo">Me apunto</h3>
+    <button class="modal__cerrar" type="button" data-cerrar aria-label="Cerrar">×</button>
+  </div>
+  <form id="form-reserva" novalidate>
+    <div class="campo">
+      <label for="f-fecha">Viernes</label>
+      <select id="f-fecha" name="fecha" required></select>
+      <span class="campo__ayuda" id="f-fecha-ayuda"></span>
+    </div>
+    <div class="campo">
+      <label for="f-nombre">Tu nombre</label>
+      <input type="text" id="f-nombre" name="nombre" maxlength="40" autocomplete="name" placeholder="Como te conocen en el pasillo" required>
+    </div>
+    <div class="campo">
+      <label>Tu foto</label>
+      <div class="foto-campo">
+        <label class="foto-campo__prev" id="foto-prev" for="f-foto" title="Elegir foto">📷</label>
+        <div>
+          <label class="btn btn--outline btn--small" for="f-foto" style="cursor:pointer">Subir o hacer foto</label>
+          <input type="file" id="f-foto" accept="image/*">
+          <div class="campo__ayuda">Para que los que se apunten después sepan con quién van. Se reduce en tu móvil antes de subirla.</div>
+        </div>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="f-resto">Dónde comemos</label>
+      <select id="f-resto" name="restauranteId" required></select>
+      <span class="campo__ayuda" id="f-resto-ayuda"></span>
+    </div>
+    <div class="modal__acciones">
+      <p class="modal__error" id="form-error" hidden></p>
+      <button type="button" class="btn btn--outline btn--small" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn--teja" id="form-enviar">Reservar plaza</button>
+    </div>
+  </form>
+  <div class="modal__ok" id="modal-ok" hidden>
+    <div style="font-size:3rem">🐷</div>
+    <h4>¡Plaza reservada!</h4>
+    <p id="modal-ok-texto"></p>
+    <div><button class="btn btn--ocre" type="button" data-cerrar>Estupendo</button></div>
+  </div>
+</dialog>
+
+<dialog class="lightbox" id="lightbox">
+  <figure style="margin:0" id="lightbox-fig"></figure>
+</dialog>
+
+<div class="aviso" id="aviso" role="status"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="data/restaurantes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
