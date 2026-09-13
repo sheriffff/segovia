@@ -133,6 +133,7 @@
 
     <div class="mapa-wrap">
       <div id="mapa" role="region" aria-label="Mapa de restaurantes de Segovia"></div>
+      <button class="mapa-toque" id="mapa-toque" type="button" hidden>Toca para mover el mapa</button>
       <div class="mapa-leyenda" aria-hidden="true">
         <span class="t-asador">Asador</span>
         <span class="t-tapas">Tapas y raciones</span>
@@ -218,8 +219,37 @@
   </div>
 </dialog>
 
+<dialog class="modal" id="modal-album">
+  <div class="modal__cab">
+    <h3 id="modal-album-titulo">Fotos de la comilona</h3>
+    <button class="modal__cerrar" type="button" data-cerrar-album aria-label="Cerrar">×</button>
+  </div>
+  <form id="form-album" novalidate>
+    <div class="campo">
+      <label for="a-autor">Quién las sube</label>
+      <input type="text" id="a-autor" maxlength="40" autocomplete="name" placeholder="Tu nombre">
+    </div>
+    <div class="campo">
+      <label>Las fotos</label>
+      <div>
+        <label class="btn btn--outline btn--small" for="a-fotos" style="cursor:pointer">Elegir fotos</label>
+        <input type="file" id="a-fotos" accept="image/*" multiple style="display:none">
+        <span class="campo__ayuda" id="a-lista" style="margin-left:.6rem"></span>
+      </div>
+      <span class="campo__ayuda">Puedes subir varias a la vez. Se reducen en tu móvil antes de subirse, así que no tarda.</span>
+    </div>
+    <div class="modal__acciones">
+      <p class="modal__error" id="a-error" hidden></p>
+      <button type="button" class="btn btn--outline btn--small" data-cerrar-album>Cancelar</button>
+      <button type="submit" class="btn btn--teja" id="a-enviar">Subir</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog class="lightbox" id="lightbox">
+  <button class="lightbox__nav lightbox__nav--prev" id="lb-prev" type="button" aria-label="Anterior" hidden>‹</button>
   <figure style="margin:0" id="lightbox-fig"></figure>
+  <button class="lightbox__nav lightbox__nav--next" id="lb-next" type="button" aria-label="Siguiente" hidden>›</button>
 </dialog>
 
 <div class="aviso" id="aviso" role="status"></div>

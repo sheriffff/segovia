@@ -42,6 +42,11 @@
 
   let demo = false;
   let reservas = {};
+  let albums = {};
+  const albumTokens = (() => {
+    try { return JSON.parse(localStorage.getItem("jca_album_tokens") || "{}"); } catch { return {}; }
+  })();
+  const guardarAlbumTokens = () => { try { localStorage.setItem("jca_album_tokens", JSON.stringify(albumTokens)); } catch {} };
 
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
 
@@ -67,8 +72,27 @@
   const local = {
     leer() { try { return JSON.parse(localStorage.getItem("jca_demo") || "{}"); } catch { return {}; } },
     escribir(d) { try { localStorage.setItem("jca_demo", JSON.stringify(d)); } catch {} },
-    async cargar() { return { reservas: this.leer() }; },
+    leerAlbums() { try { return JSON.parse(localStorage.getItem("jca_demo_albums") || "{}"); } catch { return {}; } },
+    escribirAlbums(a) { localStorage.setItem("jca_demo_albums", JSON.stringify(a)); },
+    async cargar() { return { reservas: this.leer(), albums: this.leerAlbums() }; },
     async enviar(metodo, body) {
+      if (body.accion === "album") {
+        const a = this.leerAlbums();
+        const fotos = a[body.fecha] || [];
+        if (metodo === "POST") {
+          const id = uuid();
+          fotos.push({ id, autor: body.autor, token: body.token, creado: Date.now(), foto: body.foto, thumb: body.thumb });
+          a[body.fecha] = fotos;
+          try { this.escribirAlbums(a); } catch { throw new Error("El navegador no tiene sitio para más fotos en modo demo"); }
+          return { ok: true, fotoId: id, albums: a };
+        }
+        if (metodo === "DELETE") {
+          a[body.fecha] = fotos.filter((f) => f.id !== body.fotoId);
+          if (!a[body.fecha].length) delete a[body.fecha];
+          this.escribirAlbums(a);
+          return { ok: true, albums: a };
+        }
+      }
       const d = this.leer();
       if (metodo === "POST") {
         const dia = d[body.fecha] || { restauranteId: body.restauranteId, plazas: [] };
@@ -112,6 +136,8 @@
   // ---------- Viernes ----------
   const gridViernes = $("#grid-viernes");
   const fotoSrc = (p) => p.foto || (p.fotoId ? `/api/reservas?foto=${encodeURIComponent(p.fotoId)}` : "");
+  const thumbSrc = (f) => f.thumb || `/api/reservas?albumthumb=${encodeURIComponent(f.id)}`;
+  const grandeSrc = (f) => f.foto || `/api/reservas?album=${encodeURIComponent(f.id)}`;
   const esMia = (p) => !!tokens[p.id] || !!adminKey;
   const soyDelDia = (dia) => !!adminKey || (dia && dia.plazas.some((p) => tokens[p.id]));
 
@@ -127,6 +153,23 @@
       const plazas = dia ? dia.plazas : [];
       const huecos = Math.max(0, MAX_PLAZAS - plazas.length);
       const puedoCambiar = !pasado && soyDelDia(dia);
+      const conAlbum = iso <= hoy || !!adminKey;
+      const fotos = albums[iso] || [];
+      const bloqueAlbum = !conAlbum ? "" : `
+            <div class="album">
+              <div class="album__cab">
+                <span class="album__titulo">La comilona en fotos</span>
+                <button class="btn btn--outline btn--small" data-album-subir="${iso}">Subir fotos</button>
+              </div>
+              ${fotos.length ? `<div class="album__grid">${fotos.map((f) => `
+                <div class="album__item">
+                  <button class="album__foto" type="button" data-album-ver="${f.id}" data-fecha="${iso}" title="Foto de ${esc(f.autor)}">
+                    <img src="${esc(thumbSrc(f))}" alt="Foto de ${esc(f.autor)} en la comilona" loading="lazy">
+                  </button>
+                  ${albumTokens[f.id] || adminKey ? `<button class="album__borrar" type="button" data-album-borrar="${f.id}" data-fecha="${iso}" aria-label="Borrar foto">×</button>` : ""}
+                </div>`).join("")}</div>`
+                : `<p class="album__vacio">Todavía no hay fotos. ¿Nadie sacó el móvil entre el cochinillo y el ponche?</p>`}
+            </div>`;
       return `
         <article class="dia dia--${estado}" data-fecha="${iso}">
           <div class="dia__cab">
@@ -153,6 +196,7 @@
               ${!pasado ? Array.from({ length: huecos }, () => `
                 <div class="plaza plaza--vacia"><span class="plaza__foto"></span><span>Plaza libre</span></div>`).join("") : ""}
             </div>
+            ${bloqueAlbum}
             <div class="dia__acciones">
               ${pasado ? "" : estado === "lleno"
                 ? `<button class="btn btn--outline btn--small" disabled>Completo</button>`
@@ -184,12 +228,99 @@
     const ir = e.target.closest("[data-ir-resto]");
     if (ir) { e.preventDefault(); irARestaurante(ir.dataset.irResto); return; }
     const z = e.target.closest("[data-zoom]");
-    if (z) {
-      $("#lightbox-fig").innerHTML = `<img src="${esc(z.getAttribute("src"))}" alt=""><figcaption>${esc(z.dataset.zoom)}</figcaption>`;
-      $("#lightbox").showModal();
+    if (z) return abrirLightbox([{ src: z.getAttribute("src"), pie: z.dataset.zoom }], 0);
+    const as = e.target.closest("[data-album-subir]");
+    if (as) return abrirAlbum(as.dataset.albumSubir);
+    const av = e.target.closest("[data-album-ver]");
+    if (av) {
+      const lista = (albums[av.dataset.fecha] || []).map((f) => ({ src: grandeSrc(f), pie: `${f.autor} · ${cap(fmtLargo.format(fecha(av.dataset.fecha)))}` }));
+      return abrirLightbox(lista, (albums[av.dataset.fecha] || []).findIndex((f) => f.id === av.dataset.albumVer));
+    }
+    const ab = e.target.closest("[data-album-borrar]");
+    if (ab) {
+      if (!confirm("¿Borrar esta foto del álbum?")) return;
+      try {
+        const r = await store().enviar("DELETE", { accion: "album", fecha: ab.dataset.fecha, fotoId: ab.dataset.albumBorrar, token: albumTokens[ab.dataset.albumBorrar] });
+        delete albumTokens[ab.dataset.albumBorrar]; guardarAlbumTokens();
+        albums = r.albums; renderViernes(); aviso("Foto borrada.");
+      } catch (err) { aviso(err.message, { tipo: "aviso--demo" }); }
     }
   });
-  $("#lightbox").addEventListener("click", () => $("#lightbox").close());
+
+  // ---------- Lightbox ----------
+  const lightbox = $("#lightbox");
+  let lbLista = [], lbIdx = 0;
+  function pintarLightbox() {
+    const it = lbLista[lbIdx];
+    $("#lightbox-fig").innerHTML = `<img src="${esc(it.src)}" alt=""><figcaption>${esc(it.pie)}${lbLista.length > 1 ? ` · ${lbIdx + 1}/${lbLista.length}` : ""}</figcaption>`;
+    $("#lb-prev").hidden = $("#lb-next").hidden = lbLista.length < 2;
+  }
+  function abrirLightbox(lista, idx) {
+    lbLista = lista; lbIdx = Math.max(0, idx);
+    pintarLightbox();
+    lightbox.showModal();
+  }
+  const lbMover = (d) => { lbIdx = (lbIdx + d + lbLista.length) % lbLista.length; pintarLightbox(); };
+  $("#lb-prev").addEventListener("click", (e) => { e.stopPropagation(); lbMover(-1); });
+  $("#lb-next").addEventListener("click", (e) => { e.stopPropagation(); lbMover(1); });
+  lightbox.addEventListener("click", (e) => { if (!e.target.closest("button")) lightbox.close(); });
+  lightbox.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") lbMover(-1); if (e.key === "ArrowRight") lbMover(1); });
+  let touchX = null;
+  lightbox.addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  lightbox.addEventListener("touchend", (e) => {
+    if (touchX === null || lbLista.length < 2) return;
+    const dx = e.changedTouches[0].clientX - touchX; touchX = null;
+    if (Math.abs(dx) > 40) lbMover(dx < 0 ? 1 : -1);
+  });
+
+  // ---------- Álbum: subir fotos ----------
+  const modalAlbum = $("#modal-album");
+  const formAlbum = $("#form-album");
+  const aFotos = $("#a-fotos"), aAutor = $("#a-autor"), aLista = $("#a-lista"), aError = $("#a-error");
+  let albumFecha = "";
+  function abrirAlbum(iso) {
+    albumFecha = iso;
+    $("#modal-album-titulo").textContent = `Fotos del ${fmtLargo.format(fecha(iso))}`;
+    aFotos.value = ""; aLista.textContent = ""; aError.hidden = true;
+    try { aAutor.value = localStorage.getItem("jca_nombre") || aAutor.value; } catch {}
+    $("#a-enviar").disabled = false; $("#a-enviar").textContent = "Subir";
+    modalAlbum.showModal();
+  }
+  aFotos.addEventListener("change", () => {
+    const n = aFotos.files.length;
+    aLista.textContent = n ? `${n} ${n === 1 ? "foto elegida" : "fotos elegidas"}` : "";
+  });
+  formAlbum.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    aError.hidden = true;
+    const files = Array.from(aFotos.files || []);
+    if (!files.length) { aError.textContent = "Elige al menos una foto."; aError.hidden = false; return; }
+    const autor = aAutor.value.trim() || "Anónimo";
+    try { localStorage.setItem("jca_nombre", autor); } catch {}
+    const btn = $("#a-enviar");
+    btn.disabled = true;
+    let subidas = 0;
+    try {
+      for (const f of files) {
+        btn.textContent = `Subiendo ${subidas + 1} de ${files.length}…`;
+        const [grande, thumb] = await Promise.all([reducirFoto(f, 1400, false), reducirFoto(f, 360, true)]);
+        const token = uuid();
+        const r = await store().enviar("POST", { accion: "album", fecha: albumFecha, autor, foto: grande, thumb, token });
+        albumTokens[r.fotoId] = token; guardarAlbumTokens();
+        albums = r.albums;
+        subidas++;
+      }
+      renderViernes();
+      modalAlbum.close();
+      aviso(subidas === 1 ? "Foto subida. Qué buena pinta tenía eso." : `${subidas} fotos subidas. Menudo festín.`);
+    } catch (err) {
+      if (subidas) { renderViernes(); }
+      aError.textContent = (subidas ? `Se subieron ${subidas}, pero luego: ` : "") + (err.message || "No se ha podido subir.");
+      aError.hidden = false;
+    } finally {
+      btn.disabled = false; btn.textContent = "Subir";
+    }
+  });
 
   function cambiarRestaurante(iso, ancla) {
     const dia = reservas[iso];
@@ -258,6 +389,7 @@
   }
   fFecha.addEventListener("change", () => actualizarModalFecha());
   $$("[data-cerrar]").forEach((b) => b.addEventListener("click", () => modal.close()));
+  $$("[data-cerrar-album]").forEach((b) => b.addEventListener("click", () => $("#modal-album").close()));
   modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
 
   fFoto.addEventListener("change", async () => {
@@ -273,17 +405,22 @@
     }
   });
 
-  function reducirFoto(file, tam) {
+  function reducirFoto(file, tam, cuadrada = true) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
         const c = document.createElement("canvas");
-        c.width = tam; c.height = tam;
         const ctx = c.getContext("2d");
-        const s = Math.min(img.width, img.height);
-        const sx = (img.width - s) / 2, sy = (img.height - s) / 2;
-        ctx.drawImage(img, sx, sy, s, s, 0, 0, tam, tam);
+        if (cuadrada) {
+          c.width = tam; c.height = tam;
+          const s = Math.min(img.width, img.height);
+          ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, tam, tam);
+        } else {
+          const k = Math.min(1, tam / Math.max(img.width, img.height));
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+        }
         URL.revokeObjectURL(url);
         resolve(c.toDataURL("image/jpeg", 0.82));
       };
@@ -327,7 +464,13 @@
   // ---------- Restaurantes: filtros, lista y mapa ----------
   const filtros = { tipo: "", precio: "" };
   const gridRestos = $("#grid-restos");
-  const mapa = L.map("mapa", { scrollWheelZoom: false }).setView([40.9495, -4.1215], 15);
+  const movil = L.Browser.mobile || matchMedia("(pointer: coarse)").matches;
+  const mapa = L.map("mapa", { scrollWheelZoom: false, dragging: !movil, tap: false }).setView([40.9495, -4.1215], 15);
+  if (movil) {
+    const capa = $("#mapa-toque");
+    capa.hidden = false;
+    capa.addEventListener("click", () => { mapa.dragging.enable(); capa.hidden = true; });
+  }
   L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19,
@@ -368,8 +511,6 @@
           <span class="tag tag--campus">🚶 ${r.minutosCampus} min al campus</span>
           ${r.cochinillo ? `<span class="tag">🐷 Cochinillo</span>` : ""}
           ${r.cordero ? `<span class="tag">🐑 Cordero</span>` : ""}
-          ${r.terraza ? `<span class="tag">☀️ Terraza</span>` : ""}
-          ${r.vegetariano ? `<span class="tag">🌱 Opción veggie</span>` : ""}
         </div>
         <p class="resto__frase">${esc(r.frase)}</p>
         <p class="resto__platos"><strong>Para pedir</strong>${r.platos.map(esc).join(" · ")}</p>
@@ -429,9 +570,11 @@
     try {
       const d = await api.cargar();
       reservas = d.reservas || {};
+      albums = d.albums || {};
     } catch (err) {
       demo = true;
       reservas = local.leer();
+      albums = local.leerAlbums();
       aviso(err.message === "sin-bd"
         ? "La base de datos aún no está conectada: las reservas se guardan solo en este navegador."
         : "Modo demo: sin servidor, las reservas se guardan solo en este navegador.", { fijo: true, tipo: "aviso--demo" });

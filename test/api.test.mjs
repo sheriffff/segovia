@@ -6,13 +6,18 @@ const fake = createServer((req, res) => {
   let b = "";
   req.on("data", (c) => (b += c));
   req.on("end", () => {
-    const [cmd, k, v] = JSON.parse(b);
-    let result = null;
-    if (cmd === "GET") result = datos.has(k) ? datos.get(k) : null;
-    if (cmd === "SET") { datos.set(k, v); result = "OK"; }
-    if (cmd === "DEL") { result = datos.delete(k) ? 1 : 0; }
+    const ejecutar = ([c, k, v]) => {
+      const cmd = String(c).toUpperCase();
+      if (cmd === "GET") return { result: datos.has(k) ? datos.get(k) : null };
+      if (cmd === "SET") { datos.set(k, v); return { result: "OK" }; }
+      if (cmd === "DEL") return { result: datos.delete(k) ? 1 : 0 };
+      return { error: "comando no soportado: " + cmd };
+    };
+    const body = JSON.parse(b);
+    const b64 = req.headers["upstash-encoding"] === "base64";
+    const codificar = (o) => (b64 && typeof o.result === "string" ? { result: Buffer.from(o.result).toString("base64") } : o);
     res.setHeader("content-type", "application/json");
-    res.end(JSON.stringify({ result }));
+    res.end(JSON.stringify(req.url === "/pipeline" ? body.map(ejecutar).map(codificar) : codificar(ejecutar(body))));
   });
 });
 await new Promise((r) => fake.listen(0, r));
@@ -74,6 +79,25 @@ assert.equal(r.code, 404, "foto borrada");
 r = await call("DELETE", { body: { fecha: FECHA, plazaId: idCar, token: "t3" } });
 r = await call("DELETE", { body: { fecha: FECHA, plazaId: r.body.reservas[FECHA].plazas[0].id, token: "t2" } });
 assert.equal(r.body.reservas[FECHA], undefined, "día vacío desaparece");
+
+const grande = "data:image/jpeg;base64," + Buffer.from("fotogrande").toString("base64");
+r = await call("POST", { body: { accion: "album", fecha: FECHA, autor: "Ana", foto: grande, thumb: foto, token: "a1" } });
+assert.equal(r.code, 400, "antes de la comilona no se sube");
+r = await call("POST", { body: { accion: "album", fecha: FECHA, autor: "Ana", foto: grande, thumb: foto, token: "a1" }, headers: { "x-admin-key": "sheriff" } });
+assert.equal(r.code, 201); const idFoto = r.body.fotoId;
+assert.equal(r.body.albums[FECHA][0].autor, "Ana"); assert.equal(r.body.albums[FECHA][0].token, undefined);
+r = await call("GET");
+assert.equal(r.body.albums[FECHA].length, 1, "el GET general incluye el álbum");
+r = await call("GET", { query: { albumthumb: idFoto } });
+assert.equal(r.body.toString(), "fotofake");
+r = await call("GET", { query: { album: idFoto } });
+assert.equal(r.body.toString(), "fotogrande");
+r = await call("DELETE", { body: { accion: "album", fecha: FECHA, fotoId: idFoto, token: "malo" } });
+assert.equal(r.code, 403);
+r = await call("DELETE", { body: { accion: "album", fecha: FECHA, fotoId: idFoto, token: "a1" } });
+assert.equal(r.code, 200); assert.equal(r.body.albums[FECHA], undefined);
+r = await call("GET", { query: { album: idFoto } });
+assert.equal(r.code, 404);
 
 delete process.env.UPSTASH_REDIS_REST_URL;
 r = await call("GET");

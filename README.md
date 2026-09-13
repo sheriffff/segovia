@@ -11,6 +11,8 @@ Web para que los colegas del Sheriff reserven un viernes de otoño en Segovia: c
 
 Cada viernes admite un coche con tres plazas. El primero que se apunta conduce y elige restaurante; los siguientes ven su foto y su nombre. Cada reserva lleva una foto obligatoria (se reduce a 360 px en el navegador antes de subirse). Quien reserva puede borrar su plaza desde el mismo navegador; el Sheriff puede borrar cualquiera entrando una vez en `/?admin=CLAVE` con la clave definida en la variable `ADMIN_KEY`.
 
+A partir del día de cada comilona, la tarjeta de ese viernes muestra un álbum: cualquiera puede subir fotos (se reducen a 1400 px en el móvil) y verlas a tamaño completo. Quien sube una foto puede borrarla desde su navegador; el Sheriff, cualquiera.
+
 Si la base de datos no está conectada, la web funciona en modo demo y guarda las reservas solo en el navegador.
 
 ## Desplegar en Vercel
