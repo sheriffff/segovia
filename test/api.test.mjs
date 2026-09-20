@@ -39,7 +39,7 @@ const FECHA = "2026-10-09";
 let r = await call("GET");
 assert.equal(r.code, 200); assert.deepEqual(r.body.reservas, {});
 
-r = await call("POST", { body: { fecha: "2026-10-10", nombre: "Ana", restauranteId: "x", foto, token: "t1" } });
+r = await call("POST", { body: { fecha: "2026-10-10", nombre: "Ana", restauranteId: "x", foto, telefono: "600 111 222", token: "t1" } });
 assert.equal(r.code, 400, "fecha que no es viernes");
 
 r = await call("POST", { body: { fecha: FECHA, nombre: "Ana", restauranteId: "x", token: "t1" } });
@@ -49,35 +49,44 @@ const restos = await import("node:fs").then((fs) => { const w = {}; new Function
 const rid = restos[0].id, rid2 = restos[1].id;
 
 r = await call("POST", { body: { fecha: FECHA, nombre: "Ana", restauranteId: rid, foto, token: "t1" } });
+assert.equal(r.code, 400, "sin teléfono");
+r = await call("POST", { body: { fecha: FECHA, nombre: "Ana", restauranteId: rid, foto, telefono: "600 111 222", token: "t1" } });
 assert.equal(r.code, 201); const idAna = r.body.plazaId;
+assert.equal(r.body.reservas[FECHA].plazas[0].telefono, undefined, "no filtra el teléfono");
+r = await call("GET", { headers: { "x-admin-key": "sheriff" } });
+assert.equal(r.body.reservas[FECHA].plazas[0].telefono, "600 111 222", "el admin ve el teléfono");
 assert.equal(r.body.reservas[FECHA].plazas[0].nombre, "Ana");
 assert.equal(r.body.reservas[FECHA].plazas[0].token, undefined, "no filtra el token");
 
 r = await call("GET", { query: { foto: idAna } });
 assert.equal(r.code, 200); assert.equal(r.body.toString(), "fotofake");
 
-r = await call("POST", { body: { fecha: FECHA, nombre: "Bea", restauranteId: rid2, foto, token: "t2" } });
+r = await call("POST", { body: { fecha: FECHA, nombre: "Bea", restauranteId: rid2, foto, telefono: "600 111 222", token: "t2" } });
 assert.equal(r.code, 201); assert.equal(r.body.reservas[FECHA].restauranteId, rid, "el segundo no cambia el restaurante");
-r = await call("POST", { body: { fecha: FECHA, nombre: "Car", restauranteId: rid, foto, token: "t3" } });
+r = await call("POST", { body: { fecha: FECHA, nombre: "Car", restauranteId: rid, foto, telefono: "600 111 222", token: "t3" } });
 assert.equal(r.code, 201); const idCar = r.body.plazaId;
-r = await call("POST", { body: { fecha: FECHA, nombre: "Dan", restauranteId: rid, foto, token: "t4" } });
+r = await call("POST", { body: { fecha: FECHA, nombre: "Dan", restauranteId: rid, foto, telefono: "600 111 222", token: "t4" } });
 assert.equal(r.code, 409, "cuarto no cabe");
 
 r = await call("PATCH", { body: { fecha: FECHA, plazaId: idCar, token: "malo", restauranteId: rid2 } });
 assert.equal(r.code, 403);
 r = await call("PATCH", { body: { fecha: FECHA, plazaId: idCar, token: "t3", restauranteId: rid2 } });
+assert.equal(r.code, 403, "un pasajero no cambia el restaurante");
+r = await call("PATCH", { body: { fecha: FECHA, plazaId: idAna, token: "t1", restauranteId: rid2 } });
 assert.equal(r.code, 200); assert.equal(r.body.reservas[FECHA].restauranteId, rid2);
 
 r = await call("DELETE", { body: { fecha: FECHA, plazaId: idAna, token: "t9" } });
 assert.equal(r.code, 403);
+r = await call("DELETE", { body: { fecha: FECHA, plazaId: idAna, token: "t1" } });
+assert.equal(r.code, 403, "nadie se borra solo");
 r = await call("DELETE", { body: { fecha: FECHA, plazaId: idAna }, headers: { "x-admin-key": "sheriff" } });
 assert.equal(r.code, 200); assert.equal(r.body.reservas[FECHA].plazas.length, 2);
 assert.equal(r.body.reservas[FECHA].plazas[0].nombre, "Bea", "Bea pasa a conducir");
 r = await call("GET", { query: { foto: idAna } });
 assert.equal(r.code, 404, "foto borrada");
 
-r = await call("DELETE", { body: { fecha: FECHA, plazaId: idCar, token: "t3" } });
-r = await call("DELETE", { body: { fecha: FECHA, plazaId: r.body.reservas[FECHA].plazas[0].id, token: "t2" } });
+r = await call("DELETE", { body: { fecha: FECHA, plazaId: idCar }, headers: { "x-admin-key": "sheriff" } });
+r = await call("DELETE", { body: { fecha: FECHA, plazaId: r.body.reservas[FECHA].plazas[0].id }, headers: { "x-admin-key": "sheriff" } });
 assert.equal(r.body.reservas[FECHA], undefined, "día vacío desaparece");
 
 const grande = "data:image/jpeg;base64," + Buffer.from("fotogrande").toString("base64");

@@ -40,12 +40,12 @@ function redisCliente() {
   return new Redis({ url, token, automaticDeserialization: false });
 }
 
-const limpiar = (reservas) => {
+const limpiar = (reservas, conTelefono = false) => {
   const out = {};
   for (const [fecha, dia] of Object.entries(reservas)) {
     out[fecha] = {
       restauranteId: dia.restauranteId,
-      plazas: dia.plazas.map((p) => ({ id: p.id, nombre: p.nombre, fotoId: p.id, creado: p.creado })),
+      plazas: dia.plazas.map((p) => ({ id: p.id, nombre: p.nombre, fotoId: p.id, creado: p.creado, ...(conTelefono && p.telefono ? { telefono: p.telefono } : {}) })),
     };
   }
   return out;
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       if (q.album) return enviarImagen(`jca:album:${texto(q.album, 64)}`);
       if (q.albumthumb) return enviarImagen(`jca:albumthumb:${texto(q.albumthumb, 64)}`);
       const [reservas, albums] = await Promise.all([leer(), leerAlbums()]);
-      return res.status(200).json({ reservas: limpiar(reservas), albums: limpiarAlbums(albums) });
+      return res.status(200).json({ reservas: limpiar(reservas, esAdmin), albums: limpiarAlbums(albums) });
     }
 
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
@@ -137,9 +137,11 @@ export default async function handler(req, res) {
       const nombre = texto(body.nombre, 40);
       const restauranteId = texto(body.restauranteId, 60);
       const token = texto(body.token, 80);
+      const telefono = texto(body.telefono, 20);
       const foto = typeof body.foto === "string" ? body.foto : "";
       const ids = idsRestaurantes();
       if (nombre.length < 2) return res.status(400).json({ error: "Falta el nombre" });
+      if (telefono.replace(/\D/g, "").length < 9) return res.status(400).json({ error: "Falta el teléfono" });
       if (!restauranteId || (ids && !ids.has(restauranteId))) return res.status(400).json({ error: "Restaurante no válido" });
       if (!token) return res.status(400).json({ error: "Falta el token" });
       const b64 = jpegBase64(foto);
@@ -150,10 +152,10 @@ export default async function handler(req, res) {
       const id = nuevoId();
       await redis.set(`jca:foto:${id}`, b64);
       const nuevo = dia || { restauranteId, plazas: [] };
-      nuevo.plazas.push({ id, nombre, token, creado: Date.now() });
+      nuevo.plazas.push({ id, nombre, telefono, token, creado: Date.now() });
       reservas[fecha] = nuevo;
       await escribir(reservas);
-      return res.status(201).json({ ok: true, plazaId: id, reservas: limpiar(reservas) });
+      return res.status(201).json({ ok: true, plazaId: id, reservas: limpiar(reservas, esAdmin) });
     }
 
     if (!dia) return res.status(404).json({ error: "Ese viernes no tiene reservas" });
@@ -163,20 +165,22 @@ export default async function handler(req, res) {
     if (!autorizado) return res.status(403).json({ error: "Esa plaza no es tuya" });
 
     if (req.method === "DELETE") {
+      if (!esAdmin) return res.status(403).json({ error: "Las plazas no se pueden borrar: llama al Sheriff" });
       dia.plazas = dia.plazas.filter((p) => p.id !== plazaId);
       if (dia.plazas.length) reservas[fecha] = dia; else delete reservas[fecha];
       await escribir(reservas);
       await redis.del(`jca:foto:${plazaId}`);
-      return res.status(200).json({ ok: true, reservas: limpiar(reservas) });
+      return res.status(200).json({ ok: true, reservas: limpiar(reservas, esAdmin) });
     }
 
     if (req.method === "PATCH") {
+      if (!esAdmin && dia.plazas[0].id !== plazaId) return res.status(403).json({ error: "Solo quien conduce puede cambiar el restaurante" });
       const restauranteId = texto(body.restauranteId, 60);
       const ids = idsRestaurantes();
       if (!restauranteId || (ids && !ids.has(restauranteId))) return res.status(400).json({ error: "Restaurante no válido" });
       dia.restauranteId = restauranteId;
       await escribir(reservas);
-      return res.status(200).json({ ok: true, reservas: limpiar(reservas) });
+      return res.status(200).json({ ok: true, reservas: limpiar(reservas, esAdmin) });
     }
 
     res.setHeader("allow", "GET, POST, PATCH, DELETE");

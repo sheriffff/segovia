@@ -3,13 +3,13 @@
 Web para que los colegas del Sheriff reserven un viernes de otoño en Segovia: coche, comilona, paseo y vuelta a Madrid.
 
 - `index.html`, `styles.css`, `app.js`: la web, HTML estático sin build.
-- `data/restaurantes.js`: los restaurantes (tipo, precio, coordenadas, minutos andando al campus IE).
+- `data/restaurantes.js`: los restaurantes (tipo, precio, coordenadas).
 - `api/reservas.js`: función de Vercel que guarda las reservas y las fotos en Upstash Redis.
 - `img/`: fotos de Wikimedia Commons con licencia libre (créditos en el pie de la web).
 
 ## Cómo funciona la reserva
 
-Cada viernes admite un coche con tres plazas. El primero que se apunta conduce y elige restaurante; los siguientes ven su foto y su nombre. Cada reserva lleva una foto obligatoria (se reduce a 360 px en el navegador antes de subirse). Quien reserva puede borrar su plaza desde el mismo navegador; el Sheriff puede borrar cualquiera entrando una vez en `/?admin=CLAVE` con la clave definida en la variable `ADMIN_KEY`.
+Cada viernes admite un coche con tres plazas. El primero que se apunta conduce y elige restaurante; los siguientes ven su foto y su nombre. Cada reserva lleva una foto obligatoria (se reduce a 360 px en el navegador antes de subirse). Cada reserva pide también un teléfono, que solo ve el Sheriff. El conductor elige restaurante en un selector con filtros y ficha de cada sitio, y es el único que puede cambiarlo después; los pasajeros solo ven la ficha del elegido. Nadie puede borrar su plaza: si alguien se cae, llama al Sheriff, que puede borrar cualquiera (y ver los teléfonos) entrando una vez en `/?admin=CLAVE` con la clave definida en la variable `ADMIN_KEY`.
 
 A partir del día de cada comilona, la tarjeta de ese viernes muestra un álbum: cualquiera puede subir fotos (se reducen a 1400 px en el móvil) y verlas a tamaño completo. Quien sube una foto puede borrarla desde su navegador; el Sheriff, cualquiera.
 
@@ -33,7 +33,7 @@ La integración de Upstash crea la base de datos y añade sola las variables `KV
 ```bash
 npm install
 vercel env pull .env.local
-vercel dev
+vercel dev   # http://localhost:3000
 ```
 
 Sin Vercel, abre `index.html` directamente: verás la web en modo demo.

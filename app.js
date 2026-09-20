@@ -1,7 +1,11 @@
 (() => {
   const CAMPUS = { lat: 40.95293, lon: -4.11869, nombre: "Campus IE · Santa Cruz la Real" };
+  const MADRID = { lat: 40.4168, lon: -3.7038 };
+  const HITOS = [
+    { nombre: "Acueducto", icono: "🏛️", lat: 40.94812, lon: -4.11787 },
+    { nombre: "Alcázar", icono: "🏰", lat: 40.95270, lon: -4.13270 },
+  ];
   const MAX_PLAZAS = 3;
-  const TIPOS = { asador: "Asador", tapas: "Tapas y raciones", moderno: "Cocina moderna" };
   const VIERNES = (() => {
     const out = [];
     const d = new Date(Date.UTC(2026, 8, 18));
@@ -52,7 +56,7 @@
 
   const api = {
     async cargar() {
-      const r = await fetch("/api/reservas", { headers: { accept: "application/json" } });
+      const r = await fetch("/api/reservas", { headers: { accept: "application/json", ...(adminKey ? { "x-admin-key": adminKey } : {}) } });
       if (r.status === 503) throw new Error("sin-bd");
       if (!r.ok) throw new Error("http " + r.status);
       return r.json();
@@ -99,7 +103,7 @@
         if (dia.plazas.length >= MAX_PLAZAS) throw new Error("Ese viernes ya está completo");
         if (!dia.plazas.length) dia.restauranteId = body.restauranteId;
         const id = uuid();
-        dia.plazas.push({ id, nombre: body.nombre, foto: body.foto, creado: Date.now(), token: body.token });
+        dia.plazas.push({ id, nombre: body.nombre, telefono: body.telefono, foto: body.foto, creado: Date.now(), token: body.token });
         d[body.fecha] = dia;
         this.escribir(d);
         return { ok: true, plazaId: id, reservas: this.leer() };
@@ -139,7 +143,33 @@
   const thumbSrc = (f) => f.thumb || `/api/reservas?albumthumb=${encodeURIComponent(f.id)}`;
   const grandeSrc = (f) => f.foto || `/api/reservas?album=${encodeURIComponent(f.id)}`;
   const esMia = (p) => !!tokens[p.id] || !!adminKey;
-  const soyDelDia = (dia) => !!adminKey || (dia && dia.plazas.some((p) => tokens[p.id]));
+  const conduzco = (dia) => !!dia && dia.plazas.length > 0 && (!!adminKey || !!tokens[dia.plazas[0].id]);
+
+  const precioHtml = (r) => `${"€".repeat(r.precio)}<span class="off">${"€".repeat(3 - r.precio)}</span>`;
+  const tagsResto = (r) =>
+    (r.cochinillo ? `<span class="tag tag--cochinillo">🐷 Cochinillo</span>` : "") +
+    (r.cordero ? `<span class="tag tag--cordero">🐑 Cordero</span>` : "");
+  const cuerpoResto = (r) => `
+        <p class="resto__frase">${esc(r.frase)}</p>
+        <p class="resto__platos"><strong>Para pedir</strong>${r.platos.map(esc).join(" · ")}</p>
+        <p class="resto__dir"><a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">📍 ${esc(r.direccion)}</a>${r.horario ? ` · ${esc(r.horario)}` : ""}</p>`;
+  const enlacesResto = (r, conWeb = true) =>
+    (conWeb && r.web ? `<a href="${esc(r.web)}" target="_blank" rel="noopener">Web</a>` : "") +
+    (r.telefono ? `<a href="tel:${esc(r.telefono.replace(/\s/g, ""))}">${esc(r.telefono)}</a>` : "");
+  const fichaResto = (r, { elegible = false, actual = false } = {}) => `
+    <details class="ficha${actual ? " ficha--actual" : ""}"${elegible ? ` name="pick"` : ""}>
+      <summary>
+        ${r.foto ? `<img class="ficha__mini" src="${esc(r.foto)}" alt="" loading="lazy">` : ""}
+        <span class="ficha__titulo"><span class="ficha__nombre">${esc(r.nombre)}</span>${r.web ? `<a class="ficha__web" href="${esc(r.web)}" target="_blank" rel="noopener">Ver página web</a>` : ""}</span>
+        <span class="resto__precio">${precioHtml(r)}</span>
+        <span class="ficha__sub">${tagsResto(r)}<span class="ficha__mas"></span></span>
+      </summary>
+      <div class="ficha__cuerpo">
+        ${r.foto ? `<img class="ficha__foto" src="${esc(r.foto)}" alt="${esc(r.nombre)}" loading="lazy">` : ""}
+        ${cuerpoResto(r)}
+        <div class="ficha__pie">${enlacesResto(r, false)}${elegible ? `<button type="button" class="btn btn--teja btn--small" data-elegir="${r.id}">${actual ? "Me quedo con este" : "Elegir este"}</button>` : ""}</div>
+      </div>
+    </details>`;
 
   function renderViernes() {
     gridViernes.innerHTML = VIERNES.map((iso) => {
@@ -152,7 +182,7 @@
       const resto = dia && restoPorId(dia.restauranteId);
       const plazas = dia ? dia.plazas : [];
       const huecos = Math.max(0, MAX_PLAZAS - plazas.length);
-      const puedoCambiar = !pasado && soyDelDia(dia);
+      const puedoCambiar = !pasado && conduzco(dia);
       const conAlbum = iso <= hoy || !!adminKey;
       const fotos = albums[iso] || [];
       const bloqueAlbum = !conAlbum ? "" : `
@@ -190,8 +220,8 @@
               ${plazas.map((p, i) => `
                 <div class="plaza ${i === 0 ? "plaza--conductor" : ""}">
                   <img class="plaza__foto" src="${esc(fotoSrc(p))}" alt="Foto de ${esc(p.nombre)}" loading="lazy" data-zoom="${esc(p.nombre)}">
-                  <div><span class="plaza__nombre">${esc(p.nombre)}</span><span class="plaza__rol">${i === 0 ? "Conduce" : "Va de paquete"}</span></div>
-                  ${esMia(p) && !pasado ? `<button class="plaza__borrar" data-borrar="${p.id}" data-fecha="${iso}">borrarme</button>` : ""}
+                  <div><span class="plaza__nombre">${esc(p.nombre)}</span><span class="plaza__rol">${i === 0 ? "Conduce" : "Va de paquete"}</span>${adminKey && p.telefono ? `<a class="plaza__tel" href="tel:${esc(p.telefono.replace(/\s/g, ""))}">${esc(p.telefono)}</a>` : ""}</div>
+                  ${esMia(p) && !pasado ? `<button class="plaza__borrar" data-borrar="${p.id}" data-fecha="${iso}">${adminKey ? "borrar" : "borrarme"}</button>` : ""}
                 </div>`).join("")}
               ${!pasado ? Array.from({ length: huecos }, () => `
                 <div class="plaza plaza--vacia"><span class="plaza__foto"></span><span>Plaza libre</span></div>`).join("") : ""}
@@ -212,6 +242,7 @@
     if (ap) return abrirModal({ fecha: ap.dataset.apuntar });
     const bo = e.target.closest("[data-borrar]");
     if (bo) {
+      if (!adminKey) return aviso("Las plazas no se borran solas: si no puedes venir, llama al Sheriff.");
       if (!confirm("¿Seguro que quieres borrar esta plaza?")) return;
       try {
         const r = await store().enviar("DELETE", { fecha: bo.dataset.fecha, plazaId: bo.dataset.borrar, token: tokens[bo.dataset.borrar] });
@@ -223,7 +254,7 @@
     const ca = e.target.closest("[data-cambiar]");
     if (ca) {
       e.preventDefault();
-      return cambiarRestaurante(ca.dataset.cambiar, ca);
+      return abrirPicker("cambiar", ca.dataset.cambiar);
     }
     const ir = e.target.closest("[data-ir-resto]");
     if (ir) { e.preventDefault(); irARestaurante(ir.dataset.irResto); return; }
@@ -322,75 +353,107 @@
     }
   });
 
-  function cambiarRestaurante(iso, ancla) {
-    const dia = reservas[iso];
-    if (!dia) return;
-    const sel = document.createElement("select");
-    sel.innerHTML = opcionesRestaurantes(dia.restauranteId);
-    sel.style.cssText = "font:inherit;font-size:.85rem;padding:.2rem .4rem;border-radius:8px;border:1.5px solid var(--piedra-oscura);max-width:100%";
-    ancla.replaceWith(sel);
-    sel.focus();
-    const done = async () => {
-      if (sel.value && sel.value !== dia.restauranteId) {
-        try {
-          const p = dia.plazas.find((x) => tokens[x.id]);
-          const r = await store().enviar("PATCH", { fecha: iso, restauranteId: sel.value, plazaId: p && p.id, token: p && tokens[p.id] });
-          reservas = r.reservas; aviso("Restaurante cambiado para todo el coche.");
-        } catch (err) { aviso(err.message, { tipo: "aviso--demo" }); }
-      }
-      renderViernes();
-    };
-    sel.addEventListener("change", done);
-    sel.addEventListener("blur", () => setTimeout(renderViernes, 150));
-  }
-
-  function opcionesRestaurantes(sel) {
-    return Object.entries(TIPOS).map(([t, nombre]) => `
-      <optgroup label="${nombre}">
-        ${RESTOS.filter((r) => r.tipo === t).map((r) => `<option value="${r.id}" ${r.id === sel ? "selected" : ""}>${esc(r.nombre)} · ${"€".repeat(r.precio)} · ${r.minutosCampus} min</option>`).join("")}
-      </optgroup>`).join("");
-  }
-
   // ---------- Modal de reserva ----------
   const modal = $("#modal-reserva");
   const form = $("#form-reserva");
-  const fFecha = $("#f-fecha"), fNombre = $("#f-nombre"), fResto = $("#f-resto"), fFoto = $("#f-foto");
+  const fFecha = $("#f-fecha"), fNombre = $("#f-nombre"), fTel = $("#f-tel"), fResto = $("#f-resto"), fFoto = $("#f-foto");
   const fotoPrev = $("#foto-prev"), formError = $("#form-error");
+  const picker = $("#picker"), volver = $("#modal-volver");
   let fotoData = "";
+  let restoElegido = "", pickerModo = "form", pickerIso = "";
+
+  const enPickerDelForm = () => !picker.hidden && pickerModo === "form";
+  function verVista(vista) {
+    const enPicker = vista === "picker";
+    form.hidden = enPicker; picker.hidden = !enPicker; $("#modal-ok").hidden = true;
+    volver.hidden = !enPickerDelForm();
+    $("#modal-titulo").textContent = !enPicker ? "Me apunto" : pickerModo === "form" ? "Dónde comemos" : "Cambiar restaurante";
+    modal.scrollTop = 0;
+  }
+  function pintarPicker() {
+    const actual = pickerModo === "cambiar" ? (reservas[pickerIso] || {}).restauranteId : restoElegido;
+    $("#picker-lista").innerHTML = [3, 2, 1].map((precio) => {
+      const grupo = RESTOS.filter((r) => r.precio === precio);
+      return grupo.length ? `<h4 class="picker__precio">${"€".repeat(precio)}</h4>` + grupo.map((r) => fichaResto(r, { elegible: true, actual: r.id === actual })).join("") : "";
+    }).join("");
+  }
+  function abrirPicker(modo, iso) {
+    pickerModo = modo; pickerIso = iso || "";
+    pintarPicker();
+    verVista("picker");
+    if (!modal.open) modal.showModal();
+  }
+  function pintarCampoResto() {
+    const dia = reservas[fFecha.value];
+    const conductor = dia && dia.plazas.length ? dia.plazas[0] : null;
+    if (conductor) {
+      const r = restoPorId(dia.restauranteId);
+      fResto.innerHTML = (r ? fichaResto(r) : "") + `<span class="campo__ayuda">Lo eligió ${esc(conductor.nombre)}, que para eso conduce. Toca para ver el sitio.</span>`;
+    } else if (restoPorId(restoElegido)) {
+      fResto.innerHTML = fichaResto(restoPorId(restoElegido)) + `<button type="button" class="btn btn--outline btn--small" data-abrir-picker>Cambiar</button>`;
+    } else {
+      fResto.innerHTML = `<button type="button" class="btn btn--outline" data-abrir-picker>Elegir restaurante</button><span class="campo__ayuda">Tú conduces, tú eliges mesa.</span>`;
+    }
+  }
+  fResto.addEventListener("click", (e) => { if (e.target.closest("[data-abrir-picker]")) abrirPicker("form"); });
+  volver.addEventListener("click", () => verVista("form"));
+  picker.addEventListener("click", async (e) => {
+    const el = e.target.closest("[data-elegir]");
+    if (!el) return;
+    const id = el.dataset.elegir;
+    if (pickerModo === "form") {
+      restoElegido = id; formError.hidden = true;
+      pintarCampoResto();
+      return verVista("form");
+    }
+    const dia = reservas[pickerIso];
+    if (!dia || id === dia.restauranteId) return modal.close();
+    el.disabled = true;
+    try {
+      const p = dia.plazas[0];
+      const r = await store().enviar("PATCH", { fecha: pickerIso, restauranteId: id, plazaId: p.id, token: tokens[p.id] });
+      reservas = r.reservas; renderViernes();
+      modal.close(); aviso("Restaurante cambiado para todo el coche.");
+    } catch (err) { modal.close(); aviso(err.message, { tipo: "aviso--demo" }); }
+  });
 
   function abrirModal({ fecha: iso, restauranteId } = {}) {
-    const libres = VIERNES.filter((f) => f >= hoy && (!reservas[f] || reservas[f].plazas.length < MAX_PLAZAS));
-    if (!libres.length) return aviso("No quedan viernes libres. ¡Vaya éxito!");
+    const conHueco = VIERNES.filter((f) => f >= hoy && (!reservas[f] || reservas[f].plazas.length < MAX_PLAZAS));
+    if (!conHueco.length) return aviso("No quedan viernes libres. ¡Vaya éxito!");
+    const libres = restauranteId ? conHueco.filter((f) => !reservas[f] || reservas[f].restauranteId === restauranteId) : conHueco;
+    if (!libres.length) return aviso(`No queda ningún viernes libre para estrenar ${(restoPorId(restauranteId) || {}).nombre || "ese sitio"}: en los que tienen hueco ya hay mesa elegida.`);
     fFecha.innerHTML = libres.map((f) => {
       const n = reservas[f] ? reservas[f].plazas.length : 0;
       const txt = n === 0 ? "libre, tú conduces" : `${MAX_PLAZAS - n} ${MAX_PLAZAS - n === 1 ? "plaza" : "plazas"}, conduce ${reservas[f].plazas[0].nombre}`;
       return `<option value="${f}">${cap(fmtLargo.format(fecha(f)))} · ${esc(txt)}</option>`;
     }).join("");
-    fFecha.value = iso && libres.includes(iso) ? iso : libres[0];
-    fResto.innerHTML = opcionesRestaurantes(restauranteId || "");
-    actualizarModalFecha(restauranteId);
-    form.hidden = false; $("#modal-ok").hidden = true; formError.hidden = true;
-    try { fNombre.value = localStorage.getItem("jca_nombre") || fNombre.value; } catch {}
+    const fija = Boolean(iso && libres.includes(iso));
+    fFecha.value = fija ? iso : libres[0];
+    fFecha.hidden = fija;
+    $("#f-fecha-label").hidden = fija;
+    $("#f-fecha-fija").hidden = !fija;
+    $("#f-fecha-fija").textContent = fija ? cap(fmtLargo.format(fecha(iso))) : "";
+    restoElegido = restauranteId || restoElegido;
+    pickerModo = "form";
+    actualizarModalFecha();
+    verVista("form"); formError.hidden = true;
+    try {
+      fNombre.value = localStorage.getItem("jca_nombre") || fNombre.value;
+      fTel.value = localStorage.getItem("jca_tel") || fTel.value;
+    } catch {}
     modal.showModal();
   }
-  function actualizarModalFecha(forzarResto) {
+  function actualizarModalFecha() {
     const dia = reservas[fFecha.value];
     const conductor = dia && dia.plazas.length ? dia.plazas[0] : null;
-    if (conductor) {
-      $("#f-fecha-ayuda").textContent = `Vas de paquete con ${conductor.nombre}${dia.plazas.length > 1 ? " y compañía" : ""}. Quedaos en contacto para el punto de recogida.`;
-      fResto.value = forzarResto || dia.restauranteId;
-      const r = restoPorId(dia.restauranteId);
-      $("#f-resto-ayuda").textContent = r ? `${conductor.nombre} ya eligió ${r.nombre}. Si lo cambias, cambia para todo el coche: consúltalo antes.` : "";
-    } else {
-      $("#f-fecha-ayuda").textContent = "Ese viernes está libre: tú conduces, tú eliges restaurante y tú mandas.";
-      if (forzarResto) fResto.value = forzarResto;
-      $("#f-resto-ayuda").textContent = "Elige con cabeza: mira los minutos andando al campus.";
-    }
+    $("#f-fecha-ayuda").textContent = conductor ? `Vas de paquete con ${conductor.nombre}${dia.plazas.length > 1 ? " y compañía" : ""}. Quedaos en contacto para el punto de recogida.` : "";
+    pintarCampoResto();
   }
   fFecha.addEventListener("change", () => actualizarModalFecha());
   $$("[data-cerrar]").forEach((b) => b.addEventListener("click", () => modal.close()));
   $$("[data-cerrar-album]").forEach((b) => b.addEventListener("click", () => $("#modal-album").close()));
-  modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
+  modal.addEventListener("click", (e) => { if (e.target === modal) { if (enPickerDelForm()) verVista("form"); else modal.close(); } });
+  modal.addEventListener("cancel", (e) => { if (enPickerDelForm()) { e.preventDefault(); verVista("form"); } });
 
   fFoto.addEventListener("change", async () => {
     const file = fFoto.files[0];
@@ -436,16 +499,20 @@
     formError.hidden = true;
     const nombre = fNombre.value.trim();
     if (nombre.length < 2) return mostrarError("Pon tu nombre, que luego nadie sabe quién es quién.");
+    const telefono = fTel.value.trim();
+    if (telefono.replace(/\D/g, "").length < 9) return mostrarError("Deja tu teléfono: solo lo ve el Sheriff, por si hay que llamarte.");
     if (!fotoData) return mostrarError("Sube una foto: es la regla de la casa.");
-    if (!fResto.value) return mostrarError("Elige dónde comemos.");
+    const diaPrevio = reservas[fFecha.value];
+    const restauranteId = diaPrevio && diaPrevio.plazas.length ? diaPrevio.restauranteId : restoElegido;
+    if (!restauranteId) return mostrarError("Elige dónde coméis: tú conduces, tú mandas.");
     const btn = $("#form-enviar");
     btn.disabled = true; btn.textContent = "Reservando…";
     const token = uuid();
     try {
-      const r = await store().enviar("POST", { fecha: fFecha.value, nombre, restauranteId: fResto.value, foto: fotoData, token });
+      const r = await store().enviar("POST", { fecha: fFecha.value, nombre, telefono, restauranteId, foto: fotoData, token });
       tokens[r.plazaId] = token; guardarTokens();
-      try { localStorage.setItem("jca_nombre", nombre); } catch {}
-      reservas = r.reservas;
+      try { localStorage.setItem("jca_nombre", nombre); localStorage.setItem("jca_tel", telefono); } catch {}
+      reservas = r.reservas; restoElegido = "";
       renderViernes();
       const dia = reservas[fFecha.value];
       const resto = restoPorId(dia.restauranteId);
@@ -461,8 +528,7 @@
     }
   });
 
-  // ---------- Restaurantes: filtros, lista y mapa ----------
-  const filtros = { tipo: "", precio: "" };
+  // ---------- Restaurantes: lista y mapa ----------
   const gridRestos = $("#grid-restos");
   const movil = L.Browser.mobile || matchMedia("(pointer: coarse)").matches;
   const mapa = L.map("mapa", { scrollWheelZoom: false, dragging: !movil, tap: false }).setView([40.9495, -4.1215], 15);
@@ -471,22 +537,62 @@
     capa.hidden = false;
     capa.addEventListener("click", () => { mapa.dragging.enable(); capa.hidden = true; });
   }
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+  // Clave gratuita de basemaps de CARTO (carto.com/basemaps/apikey). Sin ella las teselas
+  // salen con la marca de agua "API KEY REQUIRED". Va restringida por dominio en el panel.
+  const CARTO_KEY = "cb1_3ric_1_75a8417541456cf404a324b6";
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${CARTO_KEY ? `?key=${CARTO_KEY}` : ""}`, {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     maxZoom: 19,
   }).addTo(mapa);
   L.marker([CAMPUS.lat, CAMPUS.lon], {
     icon: L.divIcon({ className: "", html: `<div class="marker-campus">CAMPUS IE</div>`, iconSize: [90, 26], iconAnchor: [45, 13] }),
     zIndexOffset: 500,
-  }).addTo(mapa).bindPopup(`<h4>${CAMPUS.nombre}</h4><div class="pop-meta">Aquí da clase el Sheriff de 16:20 a 20:00.</div>`);
+  }).addTo(mapa).bindPopup(`<h4>${CAMPUS.nombre}</h4><div class="pop-meta">Aquí da clase el Sheriff de 16:30 a 19:30.</div>`);
+
+  HITOS.forEach((h) => {
+    L.marker([h.lat, h.lon], {
+      icon: L.divIcon({ className: "", html: `<div class="marker-hito">${h.icono} ${esc(h.nombre)}</div>`, iconSize: [150, 30], iconAnchor: [75, 15] }),
+      zIndexOffset: 400,
+    }).addTo(mapa);
+  });
+
+  // Rumbo real de Segovia a Madrid, para que la flecha del cartel apunte donde toca.
+  const rumboMadrid = (() => {
+    const rad = Math.PI / 180;
+    const y = (MADRID.lon - CAMPUS.lon) * Math.cos(CAMPUS.lat * rad);
+    const x = MADRID.lat - CAMPUS.lat;
+    return (Math.atan2(y, x) / rad + 360) % 360;
+  })();
+
+  const rosa = L.control({ position: "topright" });
+  rosa.onAdd = () => {
+    const div = L.DomUtil.create("div", "mapa-brujula");
+    div.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M24,7 L29,26 L24,22 L19,26 Z" fill="currentColor"/>
+      <path d="M24,41 L19,22 L24,26 L29,22 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </svg><span>N</span>`;
+    return div;
+  };
+  rosa.addTo(mapa);
+
+  const cartel = L.control({ position: "bottomright" });
+  cartel.onAdd = () => {
+    const div = L.DomUtil.create("div", "mapa-cartel");
+    div.innerHTML = `<svg class="mapa-cartel__flecha" viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${rumboMadrid.toFixed(0)}deg)">
+      <path d="M12,2 L12,22 M12,2 L6,9 M12,2 L18,9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg><span>Madrid</span>`;
+    return div;
+  };
+  cartel.addTo(mapa);
 
   const markers = {};
   RESTOS.forEach((r) => {
     const m = L.marker([r.lat, r.lon], {
-      icon: L.divIcon({ className: "", html: `<div class="marker-pin marker-pin--${r.tipo}" data-marker="${r.id}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
+      icon: L.divIcon({ className: "", html: `<div class="marker-pin" data-marker="${r.id}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
       title: r.nombre,
     });
-    m.bindPopup(`<h4>${esc(r.nombre)}</h4><div class="pop-meta">${TIPOS[r.tipo]} · ${"€".repeat(r.precio)} · 🚶 ${r.minutosCampus} min al campus</div><button class="btn btn--teja btn--small" data-comer="${r.id}">Comer aquí</button>`);
+    m.bindPopup(`<h4>${esc(r.nombre)}</h4><div class="pop-meta">${"€".repeat(r.precio)}</div><button class="btn btn--teja btn--small" data-comer="${r.id}">Comer aquí</button>`);
     m.on("click", () => marcarActivo(r.id, true));
     markers[r.id] = m;
   });
@@ -496,40 +602,23 @@
     if (b) { mapa.closePopup(); abrirModal({ restauranteId: b.dataset.comer }); }
   });
 
-  const pasaFiltro = (r) => (!filtros.tipo || r.tipo === filtros.tipo) && (!filtros.precio || String(r.precio) === filtros.precio);
-
   function renderRestos() {
-    const visibles = RESTOS.filter(pasaFiltro);
-    gridRestos.innerHTML = visibles.map((r) => `
-      <article class="resto resto--${r.tipo}" id="resto-${r.id}" data-resto="${r.id}">
+    gridRestos.innerHTML = [3, 2, 1].map((precio) => `<h3 class="restos__precio">${"€".repeat(precio)}</h3>` + RESTOS.filter((r) => r.precio === precio).map((r) => `
+      <article class="resto" id="resto-${r.id}" data-resto="${r.id}">
+        ${r.foto ? `<img class="resto__foto" src="${esc(r.foto)}" alt="${esc(r.nombre)}" loading="lazy">` : ""}
         <div class="resto__cab">
           <h3 class="resto__nombre">${esc(r.nombre)}</h3>
-          <span class="resto__precio" title="${["", "Hasta 20 € por persona", "Entre 20 y 40 € por persona", "Más de 40 € por persona"][r.precio]}">${"€".repeat(r.precio)}<span class="off">${"€".repeat(3 - r.precio)}</span></span>
+          <span class="resto__precio" title="${["", "Hasta 30 € por persona", "Entre 30 y 60 € por persona", "Más de 60 € por persona"][r.precio]}">${precioHtml(r)}</span>
         </div>
-        <div class="resto__meta">
-          <span class="tag tag--tipo">${TIPOS[r.tipo]}</span>
-          <span class="tag tag--campus">🚶 ${r.minutosCampus} min al campus</span>
-          ${r.cochinillo ? `<span class="tag">🐷 Cochinillo</span>` : ""}
-          ${r.cordero ? `<span class="tag">🐑 Cordero</span>` : ""}
-        </div>
-        <p class="resto__frase">${esc(r.frase)}</p>
-        <p class="resto__platos"><strong>Para pedir</strong>${r.platos.map(esc).join(" · ")}</p>
-        <p class="resto__dir"><a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">📍 ${esc(r.direccion)}</a>${r.horario ? ` · ${esc(r.horario)}` : ""}</p>
+        <div class="resto__meta">${tagsResto(r)}</div>
+        ${cuerpoResto(r)}
         <div class="resto__pie">
-          ${r.web ? `<a href="${esc(r.web)}" target="_blank" rel="noopener">Web</a>` : ""}
-          ${r.telefono ? `<a href="tel:${esc(r.telefono.replace(/\s/g, ""))}">${esc(r.telefono)}</a>` : ""}
+          ${enlacesResto(r)}
           <button class="btn btn--teja btn--small" data-comer="${r.id}">Comer aquí</button>
         </div>
-      </article>`).join("");
-    $("#filtros-resultado").textContent = visibles.length === RESTOS.length
-      ? `${RESTOS.length} sitios donde comer bien.`
-      : visibles.length ? `${visibles.length} de ${RESTOS.length} sitios.` : "Nada con esos filtros. Afloja un poco, que en Segovia se come bien en todas partes.";
-    RESTOS.forEach((r) => {
-      const on = pasaFiltro(r);
-      if (on && !mapa.hasLayer(markers[r.id])) markers[r.id].addTo(mapa);
-      if (!on && mapa.hasLayer(markers[r.id])) mapa.removeLayer(markers[r.id]);
-    });
-    if (visibles.length) mapa.fitBounds(L.latLngBounds([[CAMPUS.lat, CAMPUS.lon], ...visibles.map((r) => [r.lat, r.lon])]).pad(0.12), { animate: true });
+      </article>`).join("")).join("");
+    RESTOS.forEach((r) => { if (!mapa.hasLayer(markers[r.id])) markers[r.id].addTo(mapa); });
+    mapa.fitBounds(L.latLngBounds([[CAMPUS.lat, CAMPUS.lon], ...HITOS.map((h) => [h.lat, h.lon]), ...RESTOS.map((r) => [r.lat, r.lon])]).pad(0.12), { animate: true });
   }
 
   function marcarActivo(id, desdeMapa) {
@@ -542,7 +631,6 @@
   }
   function irARestaurante(id) {
     const r = restoPorId(id); if (!r) return;
-    if (!pasaFiltro(r)) { filtros.tipo = ""; filtros.precio = ""; $$(".chip").forEach((c) => c.setAttribute("aria-pressed", c.dataset.valor === "" ? "true" : "false")); renderRestos(); }
     const card = $(`#resto-${id}`);
     if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
     marcarActivo(id);
@@ -556,13 +644,6 @@
     if (b) return abrirModal({ restauranteId: b.dataset.comer });
     const c = e.target.closest("[data-resto]");
     if (c && !e.target.closest("a")) { markers[c.dataset.resto].openPopup(); $("#mapa").scrollIntoView({ behavior: "smooth", block: "nearest" }); }
-  });
-
-  $("#filtros").addEventListener("click", (e) => {
-    const chip = e.target.closest(".chip"); if (!chip) return;
-    filtros[chip.dataset.filtro] = chip.dataset.valor;
-    $$(`.chip[data-filtro="${chip.dataset.filtro}"]`).forEach((c) => c.setAttribute("aria-pressed", c === chip ? "true" : "false"));
-    renderRestos();
   });
 
   // ---------- Arranque ----------

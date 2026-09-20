@@ -5,7 +5,6 @@
   "description": "Los viernes del Sheriff en Segovia: coche, comilona, paseo y vuelta a Madrid.",
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
     "test": "node test/api.test.mjs"
   },
   "dependencies": {
