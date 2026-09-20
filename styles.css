@@ -57,7 +57,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.
   flex: 0 0 auto;
   width: clamp(90px, 15vw, 220px);
   height: auto;
-  aspect-ratio: 360 / 420;
+  aspect-ratio: 360 / 352;
   color: var(--tinta);
   opacity: 0.85;
 }
@@ -67,7 +67,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.
   font-family: var(--font-display);
   letter-spacing: 0.35em;
   text-transform: uppercase;
-  font-size: clamp(0.7rem, 1.4vw, 0.95rem);
+  font-size: clamp(0.85rem, 1.7vw, 1.1rem);
   font-weight: 700;
   color: var(--tinta-suave);
   margin: 0 0 1.4rem;
@@ -337,9 +337,11 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.
 .ficha__pie .btn { margin-left: auto; }
 .picker { padding: 1.1rem 1.6rem 1.6rem; display: grid; gap: 1rem; }
 .picker__lista { display: grid; gap: 0.6rem; }
-.picker__precio, .restos__precio { font-family: var(--font-display); font-weight: 700; color: var(--ocre-oscuro); letter-spacing: 0.08em; font-size: 1.05rem; margin: 0.6rem 0 0; border-bottom: 1px solid var(--piedra); padding-bottom: 0.2rem; }
-.picker__precio:first-child, .restos__precio:first-child { margin-top: 0; }
-.restos__precio { grid-column: 1 / -1; font-size: 1.4rem; margin-top: 1.5rem; }
+.grupo-precio { display: flex; align-items: baseline; gap: 0.6rem; font-family: var(--font-display); font-weight: 700; color: var(--ocre-oscuro); letter-spacing: 0.08em; font-size: 1.05rem; margin: 0.6rem 0 0; border-bottom: 1px solid var(--piedra); padding-bottom: 0.2rem; }
+.grupo-precio:first-child { margin-top: 0; }
+.grupo-precio__txt { font-family: var(--font-body); font-style: italic; font-weight: 400; letter-spacing: 0; font-size: 0.85rem; color: var(--tinta-suave); }
+h3.grupo-precio { grid-column: 1 / -1; font-size: 1.4rem; margin-top: 1.5rem; }
+h3.grupo-precio .grupo-precio__txt { font-size: 1rem; }
 .plaza__tel { display: block; font-size: 0.8rem; color: var(--azul); }
 
 .aviso {
@@ -385,8 +387,9 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.
 .mapa-toque span, .mapa-toque { text-shadow: 0 1px 4px rgba(255,255,255,.9); }
 
 @media (max-width: 640px) {
-  .hero__titular { flex-direction: column; gap: 1.2rem; }
-  .hero__tramo { width: 100%; }
+  .hero__kicker { margin-bottom: 0.7rem; letter-spacing: 0.22em; }
+  .hero__titular { flex-direction: column; gap: 0.6rem; }
+  .hero__tramo { width: 78%; }
   .hero__tramo--dcha { display: none; }
   .seccion { padding: 3rem 0; }
   .resto__pie .btn, .ficha__pie .btn { margin-left: 0; width: 100%; justify-content: center; }

@@ -16,7 +16,15 @@
     }
     return out;
   })();
-  const RESTOS = (window.RESTAURANTES || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  // Orden al azar en cada carga para que no salga siempre el mismo primero.
+  const RESTOS = (() => {
+    const lista = (window.RESTAURANTES || []).slice();
+    for (let i = lista.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lista[i], lista[j]] = [lista[j], lista[i]];
+    }
+    return lista;
+  })();
   const restoPorId = (id) => RESTOS.find((r) => r.id === id);
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -145,6 +153,8 @@
   const esMia = (p) => !!tokens[p.id] || !!adminKey;
   const conduzco = (dia) => !!dia && dia.plazas.length > 0 && (!!adminKey || !!tokens[dia.plazas[0].id]);
 
+  const ETIQUETA_PRECIO = { 3: "Caros", 2: "Medio caros", 1: "Baratos" };
+  const cabeceraPrecio = (precio, tag) => `<${tag} class="grupo-precio">${"€".repeat(precio)}<span class="grupo-precio__txt">${ETIQUETA_PRECIO[precio]}</span></${tag}>`;
   const precioHtml = (r) => `${"€".repeat(r.precio)}<span class="off">${"€".repeat(3 - r.precio)}</span>`;
   const tagsResto = (r) =>
     (r.cochinillo ? `<span class="tag tag--cochinillo">🐷 Cochinillo</span>` : "") +
@@ -374,7 +384,7 @@
     const actual = pickerModo === "cambiar" ? (reservas[pickerIso] || {}).restauranteId : restoElegido;
     $("#picker-lista").innerHTML = [3, 2, 1].map((precio) => {
       const grupo = RESTOS.filter((r) => r.precio === precio);
-      return grupo.length ? `<h4 class="picker__precio">${"€".repeat(precio)}</h4>` + grupo.map((r) => fichaResto(r, { elegible: true, actual: r.id === actual })).join("") : "";
+      return grupo.length ? cabeceraPrecio(precio, "h4") + grupo.map((r) => fichaResto(r, { elegible: true, actual: r.id === actual })).join("") : "";
     }).join("");
   }
   function abrirPicker(modo, iso) {
@@ -603,7 +613,7 @@
   });
 
   function renderRestos() {
-    gridRestos.innerHTML = [3, 2, 1].map((precio) => `<h3 class="restos__precio">${"€".repeat(precio)}</h3>` + RESTOS.filter((r) => r.precio === precio).map((r) => `
+    gridRestos.innerHTML = [3, 2, 1].map((precio) => cabeceraPrecio(precio, "h3") + RESTOS.filter((r) => r.precio === precio).map((r) => `
       <article class="resto" id="resto-${r.id}" data-resto="${r.id}">
         ${r.foto ? `<img class="resto__foto" src="${esc(r.foto)}" alt="${esc(r.nombre)}" loading="lazy">` : ""}
         <div class="resto__cab">
