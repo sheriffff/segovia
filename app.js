@@ -462,7 +462,7 @@
   fFecha.addEventListener("change", () => actualizarModalFecha());
   $$("[data-cerrar]").forEach((b) => b.addEventListener("click", () => modal.close()));
   $$("[data-cerrar-album]").forEach((b) => b.addEventListener("click", () => $("#modal-album").close()));
-  modal.addEventListener("click", (e) => { if (e.target === modal) { if (enPickerDelForm()) verVista("form"); else modal.close(); } });
+  modal.addEventListener("click", (e) => { if (e.target === modal && enPickerDelForm()) verVista("form"); });
   modal.addEventListener("cancel", (e) => { if (enPickerDelForm()) { e.preventDefault(); verVista("form"); } });
 
   fFoto.addEventListener("change", async () => {

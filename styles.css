@@ -371,8 +371,10 @@ h3.grupo-precio .grupo-precio__txt { font-size: 1rem; }
 .album { border-top: 1px dashed var(--piedra-oscura); padding-top: 0.7rem; display: grid; gap: 0.6rem; }
 .album__cab { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
 .album__titulo { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tinta-suave); }
-.album__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+.album__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 0.45rem; }
 .album__item { position: relative; }
+.album__item:first-child { grid-column: 1 / -1; }
+.album__item:first-child .album__foto { aspect-ratio: 16 / 10; }
 .album__foto { padding: 0; border: none; background: var(--piedra); border-radius: 8px; overflow: hidden; aspect-ratio: 1; width: 100%; display: block; }
 .album__foto img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.15s ease; }
 .album__foto:hover img { transform: scale(1.06); }
